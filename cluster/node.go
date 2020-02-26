@@ -15,8 +15,10 @@ type Node struct {
 	canProceed: sync.RWMutex
 	canRecv: sync.RWMutex
 
+	noMarkerReceived: bool
 	nodeState: int
-	channelState: map[int](int)
+	channelState: map[int]([]int)
+	shouldRecordChannelState: map[int](bool)
 }
 
 func New(nodeId int, balance int) {
@@ -28,19 +30,9 @@ func New(nodeId int, balance int) {
 		sawToken: make(map[int](bool))
 	}
 
-	// go node.start()
-
 	return node
 }
 
-
-// func (self *Node) start() {
-// 	for recvId, channel := range self.inChannels {
-// 		select {
-// 		case event := <
-// 		}
-// 	}
-// }
 
 // This is assumed to be a command communicated by the master
 func (self *Node) sendMessage(recvId int, amount int) {
@@ -62,38 +54,74 @@ func (self *Node) recvMessage(senderId int) {
 	select {
 	case msg := <- self.inChannels[senderId]:
 		if msg == -1 {
-			if self.inSnapshot {
-				self.endSnapshot()
+			self.canProceed.Lock()
+			fmt.Printf("%d SnapshotToken -1", senderId)
+			if self.noMarkerReceived {
+				self.propagateSnapshot(senderId)
+			} else if self.shouldRecordChannelState[senderId] == true {
+				self.shouldRecordChannelState[senderId] = false
+				doneSnapshot = true
+				for _, stillRecording := range self.shouldRecordChannelState {
+					doneSnapshot = doneSnapshot && !(stillRecording)
+				}
+				if doneSnapshot {
+					self.firstMarkerReceived = false
+				}
+			} else {
+				fmt.Println("Trying to take a new snapshot while another already going on")
 			}
-			self.beginSnapshot(senderId)
+			self.canProceed.Unlock()
 		} else {
+			self.canProceed.RLock()
+			self.canRecv.RLock()
+			fmt.Printf("%d Transfer %d", senderId, msg)
+			if self.shouldRecordChannelState[senderId] {
+				channelState[senderId] = append(channelState[senderId], msg)
+			}
 			self.updateBalance(msg)
+			self.canRecv.RUnlock()
+			self.canProceed.RUnlock()
 		}
-
+	default:
+		fmt.Println("Nothing to receive")
 	}
 }
 
-func (self *Node) beginSnapshot(senderId int) {
-	/* TODO
-		record own state
-		empty incoming channel from sender
-		[]
-	*/
-
+func (self *Node) initiateSnapshot() {
 	self.canProceed.Lock()
-	self.snapshotState = self.balance
+	self.nodeState = self.balance
+	self.noMarkerReceived = false
+
+	// Send marker message to all processes
 	for _, channel := range self.outChannels {
 		channel <- -1
+	}
+
+	// Start recording incoming channel messages
+	for idx, _ := range self.shouldRecordChannelState {
+		self.shouldRecordChannelState[idx] = true
 	}
 	self.canProceed.Unlock()
 }
 
-func (self *Node) stopSnapshot(senderId int) {
-	// Record channel state
+// Already locked at caller
+func (self *Node) propagateSnapshot(senderId int) {
+	self.nodeState = self.balance
+	self.noMarkerReceived = false
+
+	// Send marker message to all processes
+	for _, channel := range self.outChannels {
+		channel <- -1
+	}
+
+	// Start recording incoming channel messages
+	// TODO: finish this
+	for idx, _ := range self.shouldRecordChannelState {
+		if idx == senderId:
+			self.shouldRecordChannelState[idx] = true
+	}
 }
 
-func (self *Node) updateState(amount int) {
-	self.canProceed.RLock()
-	self.canRecv.RLock()
+func (self *Node) updateBalance(amount int) {
 	self.balance += amount
 }
