@@ -61,8 +61,8 @@ func sendRoute(w http.ResponseWriter, r *http.Request) {
 	route := "Send"
 
 	query := r.URL.Query()
-	senderID, receiverID, initAmount := query.Get("senderID"), query.Get("receiverID"), query.Get("initAmount")
-	handleRoute(route, senderID, receiverID, initAmount)
+	senderID, receiverID, amount := query.Get("senderID"), query.Get("receiverID"), query.Get("amount")
+	handleRoute(route, senderID, receiverID, amount)
 }
 
 // receiveRoute handles 'Receive' command from Master

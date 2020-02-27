@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func main() {
 
@@ -31,6 +34,7 @@ func KillAll(args ...interface{}) {
 
 // CreateNode executes 'CreateNode' command on the cluster
 func CreateNode(args ...interface{}) {
+	time.Sleep(time.Millisecond)
 	fmt.Printf("\nAt function CreateNode: %v", args)
 }
 
