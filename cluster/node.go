@@ -93,7 +93,7 @@ func (this_node *Node) SendMessage(recvID int, amount int) {
 // channels. If not, we block on sender 0 (if we are not 0),
 // 1 otherwise
 // TODO: Reduce code repetition
-func (this_node *Node) RecvMessage(sender []int) {
+func (this_node *Node) RecvMessage(sender ...int) {
 	// TODO: make senderID optional in parameters
 	senderSpecified := (len(sender) == 1)
 	if len(sender) > 1 {

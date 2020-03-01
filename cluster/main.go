@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -76,15 +77,15 @@ var (
 	nodeStates       []State
 )
 
-// KillAll ...
-func KillAll() {
+// KillAll executes 'KillAll' command on the cluster
+func KillAll(args ...interface{}) {
 	os.Exit(0)
 }
 
-// CreateNode ...
-// TODO iterate through nodes only when initialized
-func CreateNode(id int, balance int) {
-	newNode := New(id, balance)
+// CreateNode executes 'CreateNode' command on the cluster
+func CreateNode(args ...interface{}) {
+	id, initBalance := toInt(args[0]), toInt(args[1])
+	newNode := New(id, initBalance)
 
 	for _, presentID := range initializedNodes {
 		n := nodes[presentID]
@@ -101,35 +102,42 @@ func CreateNode(id int, balance int) {
 	initializedNodes = append(initializedNodes, id)
 }
 
-// Send ...
-func Send(sID int, rID int, amount int) {
-	sender := nodes[sID]
-	sender.SendMessage(rID, amount)
+func Send(args ...interface{}) {
+	sId, rId, amount := toInt(args[0]), toInt(args[1]), toInt(args[2])
+	sender := nodes[sId]
+	sender.SendMessage(rId, amount)
 }
 
-// Receive ...
-func Receive(id ...int) {
-	rID := id[0]
-	receiver := nodes[rID]
-	recvParams := id[1:]
-	receiver.RecvMessage(recvParams)
+func Receive(args ...interface{}) {
+	rId := toInt(args[0])
+	receiver := nodes[rId]
+
+	switch len(args) {
+	case 1:
+		receiver.RecvMessage()
+	case 2:
+		sId := toInt(args[1])
+		receiver.RecvMessage(sId)
+	}
+
 }
 
-func ReceiveAll() {
+func ReceiveAll(args ...interface{}) {
 	for _, node := range nodes {
 		go node.RecvNonBlocking()
 	}
 }
 
 // This command will be received from Observer, not Master
-func BeginSnapshot(nodeID int) {
-	node := nodes[nodeID]
+func BeginSnapshot(args ...interface{}) {
+	nodeId := toInt(args[0])
+	node := nodes[nodeId]
 	node.InitiateSnapshot()
 }
 
 // This function will send response to Observer, not Master
-func CollectState() {
-	var states [MAX_NODES]State
+func CollectState(args ...interface{}) {
+	// var states [MAX_NODES]State
 	for _, node := range nodes {
 		// TODO make this run concurrently
 		nodeState := node.GetState()
@@ -139,6 +147,15 @@ func CollectState() {
 
 // Will be done in observer
 // TODO
-func PrintSnapshot() {
+func PrintSnapshot(args ...interface{}) {
 
+}
+
+func toInt(arg interface{}) int {
+	s, ok := arg.(string)
+	if ok {
+		v, _ := strconv.Atoi(s)
+		return v
+	}
+	return -1
 }
