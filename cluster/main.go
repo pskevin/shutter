@@ -1,4 +1,4 @@
-package cluster
+package main
 
 import (
 	"fmt"
@@ -69,10 +69,12 @@ TODO: Shift the command handlers into different files instead of collecting all 
 // 	fmt.Printf("\nAt function PrintSnapshot: %v", args)
 // }
 
-MAX_NODES := 100000
+var (
+	MAX_NODES = 100000
 
-// Arrays are go-routine safe
-nodes := [MAX_NODES]Node
+	// Arrays are go-routine safe
+	nodes [MAX_NODES]Node
+)
 
 
 func KillAll() {
