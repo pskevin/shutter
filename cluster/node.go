@@ -6,160 +6,175 @@ import (
 	"sync"
 )
 
+// Node ...
 type Node struct {
-	nodeId int
-	balance int
-	inChannels map[int](chan int)
+	nodeID      int
+	balance     int
+	inChannels  map[int](chan int)
 	outChannels map[int](chan int)
 
 	canProceed sync.RWMutex
-	canRecv sync.RWMutex
+	canRecv    sync.RWMutex
 
-	noMarkerReceived bool
-	finishedSnapshot bool
-	nodeState int
-	channelState map[int]([]int)
+	noMarkerReceived         bool
+	finishedSnapshot         bool
+	nodeState                int
+	channelState             map[int]([]int)
 	shouldRecordChannelState map[int](bool)
 }
 
+// State ...
 type State struct {
-	nodeId int
-	nodeState int
-	channelState map[int]([] int)
+	nodeID       int
+	nodeState    int
+	channelState map[int]([]int)
 }
 
-func New(nodeId int, balance int) {
+// New ...
+func New(nodeID int, balance int) {
 	node = &Node{
-		nodeId:	nodeId,
-		balance: balance,
-		inChannels: make(map[int](chan int)),
+		nodeID:      nodeID,
+		balance:     balance,
+		inChannels:  make(map[int](chan int)),
 		outChannels: make(map[int](chan int)),
+		// canProceed: true,
+		// canRecv: true,
+
+		noMarkerReceived:         true,
+		finishedSnapshot:         false,
+		channelState:             make(map[int]([]int)),
+		shouldRecordChannelState: make(map[int]bool),
 	}
 
 	return node
 }
 
-func NewState(nodeId int, nodeState int, channelState map[int]([] int)) {
+// NewState ...
+func NewState(nodeID int, nodeState int, channelState map[int]([]int)) {
 	state = &State{
-		nodeId: nodeId,
-		nodeState: nodeState,
+		nodeID:       nodeID,
+		nodeState:    nodeState,
 		channelState: channelState,
 	}
 
 	return state
 }
 
-func (self *Node) CreateIncoming(source int, channel chan) {
-	self.inChannels[source] = channel
+// CreateIncoming ...
+func (this_node *Node) CreateIncoming(source int, channel chan int) {
+	this_node.inChannels[source] = channel
 }
 
-func (self *Node) CreateOutgoing(dest int, channel chan) {
-	self.outChannels[dest] = channel
+// CreateOutgoing ...
+func (this_node *Node) CreateOutgoing(dest int, channel chan int) {
+	this_node.outChannels[dest] = channel
 }
 
-
+// SendMessage ...
 // This is assumed to be a command communicated by the master
-func (self *Node) SendMessage(recvId int, amount int) {
-	self.canProceed.RLock()
-	self.canRecv.Lock()
+func (this_node *Node) SendMessage(recvID int, amount int) {
+	this_node.canProceed.RLock()
+	this_node.canRecv.Lock()
 	if amount > balance {
 		fmt.Printf("ERR_SEND")
 	} else {
-		self.outChannels[recvId] <- amount
-		self.balance -= amount
+		this_node.outChannels[recvID] <- amount
+		this_node.balance -= amount
 	}
-	self.canRecv.Unlock()
-	self.canProceed.RUnlock()
+	this_node.canRecv.Unlock()
+	this_node.canProceed.RUnlock()
 }
 
-
-// Here we assume that when senderId is given,
-// the call is blocking. When senderId is not given,
+// RecvMessage ...
+// Here we assume that when senderID is given,
+// the call is blocking. When senderID is not given,
 // we try all inchannels to see if there is anything to
 // receive. If we receive a message, we stop trying other
 // channels. If not, we block on sender 0 (if we are not 0),
 // 1 otherwise
 // TODO: Reduce code repetition
-func (self *Node) RecvMessage(sender ...int) {
-	// TODO: make senderId optional in parameters
-	senderSpecified := (len(sender)==1)
+func (this_node *Node) RecvMessage(sender ...int) {
+	// TODO: make senderID optional in parameters
+	senderSpecified := (len(sender) == 1)
 	if len(sender) > 1 {
 		os.Exit(-1)
 	}
-	senderId := sender[0]
+	if senderSpecified {
+		senderID := sender[0]
+	}
 
 	if senderSpecified {
 		select {
-		case msg := <- self.inChannels[senderId]:
+		case msg := <-this_node.inChannels[senderID]:
 			if msg == -1 {
-				self.canProceed.Lock()
-				self.canRecv.RLock()
-				fmt.Printf("%d SnapshotToken -1", senderId)
-				if self.noMarkerReceived {
-					self.propagateSnapshot(senderId)
-				} else if self.shouldRecordChannelState[senderId] == true {
-					self.shouldRecordChannelState[senderId] = false
+				this_node.canProceed.Lock()
+				this_node.canRecv.RLock()
+				fmt.Printf("%d SnapshotToken -1", senderID)
+				if this_node.noMarkerReceived {
+					this_node.propagateSnapshot(senderID)
+				} else if this_node.shouldRecordChannelState[senderID] == true {
+					this_node.shouldRecordChannelState[senderID] = false
 					doneSnapshot := true
-					for _, stillRecording := range self.shouldRecordChannelState {
+					for _, stillRecording := range this_node.shouldRecordChannelState {
 						doneSnapshot = doneSnapshot && !(stillRecording)
 					}
 					if doneSnapshot {
-						self.firstMarkerReceived = false
-						self.finishedSnapshot = true
+						this_node.firstMarkerReceived = false
+						this_node.finishedSnapshot = true
 					}
 				} else {
 					fmt.Println("Trying to take a new snapshot while another already going on!")
 				}
-				self.canRecv.RUnlock()
-				self.canProceed.Unlock()
+				this_node.canRecv.RUnlock()
+				this_node.canProceed.Unlock()
 			} else {
-				self.canProceed.RLock()
-				self.canRecv.RLock()
-				fmt.Printf("%d Transfer %d", senderId, msg)
-				if self.shouldRecordChannelState[senderId] {
-					channelState[senderId] = append(channelState[senderId], msg)
+				this_node.canProceed.RLock()
+				this_node.canRecv.RLock()
+				fmt.Printf("%d Transfer %d", senderID, msg)
+				if this_node.shouldRecordChannelState[senderID] {
+					channelState[senderID] = append(channelState[senderID], msg)
 				}
-				self.updateBalance(msg)
-				self.canRecv.RUnlock()
-				self.canProceed.RUnlock()
+				this_node.updateBalance(msg)
+				this_node.canRecv.RUnlock()
+				this_node.canProceed.RUnlock()
 			}
 		}
 	} else {
 		recvdFlag := false
-		for idx, _ := range self.inChannels {
+		for idx := range this_node.inChannels {
 			select {
-			case msg := <- self.inChannels[idx]:
+			case msg := <-this_node.inChannels[idx]:
 				if msg == -1 {
-					self.canProceed.Lock()
-					self.canRecv.RLock()
+					this_node.canProceed.Lock()
+					this_node.canRecv.RLock()
 					fmt.Printf("%d SnapshotToken -1", idx)
-					if self.noMarkerReceived {
-						self.propagateSnapshot(idx)
-					} else if self.shouldRecordChannelState[idx] == true {
-						self.shouldRecordChannelState[idx] = false
+					if this_node.noMarkerReceived {
+						this_node.propagateSnapshot(idx)
+					} else if this_node.shouldRecordChannelState[idx] == true {
+						this_node.shouldRecordChannelState[idx] = false
 						doneSnapshot := true
-						for _, stillRecording := range self.shouldRecordChannelState {
+						for _, stillRecording := range this_node.shouldRecordChannelState {
 							doneSnapshot = doneSnapshot && !(stillRecording)
 						}
 						if doneSnapshot {
-							self.firstMarkerReceived = false
-							self.finishedSnapshot = true
+							this_node.firstMarkerReceived = false
+							this_node.finishedSnapshot = true
 						}
 					} else {
 						fmt.Println("Trying to take a new snapshot while another already going on!")
 					}
-					self.canRecv.RUnlock()
-					self.canProceed.Unlock()
+					this_node.canRecv.RUnlock()
+					this_node.canProceed.Unlock()
 				} else {
-					self.canProceed.RLock()
-					self.canRecv.RLock()
+					this_node.canProceed.RLock()
+					this_node.canRecv.RLock()
 					fmt.Printf("%d Transfer %d", idx, msg)
-					if self.shouldRecordChannelState[idx] {
+					if this_node.shouldRecordChannelState[idx] {
 						channelState[idx] = append(channelState[idx], msg)
 					}
-					self.updateBalance(msg)
-					self.canRecv.RUnlock()
-					self.canProceed.RUnlock()
+					this_node.updateBalance(msg)
+					this_node.canRecv.RUnlock()
+					this_node.canProceed.RUnlock()
 				}
 				recvdFlag = true
 				break
@@ -168,135 +183,138 @@ func (self *Node) RecvMessage(sender ...int) {
 		}
 
 		if recvdFlag == false {
-			if self.nodeId == 0 {
-				senderId = 1
+			if this_node.nodeID == 0 {
+				senderID = 1
 			} else {
-				senderId = 0
+				senderID = 0
 			}
 
 			select {
-			case msg := <- self.inChannels[senderId]:
+			case msg := <-this_node.inChannels[senderID]:
 				if msg == -1 {
-					self.canProceed.Lock()
-					self.canRecv.RLock()
-					fmt.Printf("%d SnapshotToken -1", senderId)
-					if self.noMarkerReceived {
-						self.propagateSnapshot(senderId)
-					} else if self.shouldRecordChannelState[senderId] == true {
-						self.shouldRecordChannelState[senderId] = false
+					this_node.canProceed.Lock()
+					this_node.canRecv.RLock()
+					fmt.Printf("%d SnapshotToken -1", senderID)
+					if this_node.noMarkerReceived {
+						this_node.propagateSnapshot(senderID)
+					} else if this_node.shouldRecordChannelState[senderID] == true {
+						this_node.shouldRecordChannelState[senderID] = false
 						doneSnapshot := true
-						for _, stillRecording := range self.shouldRecordChannelState {
+						for _, stillRecording := range this_node.shouldRecordChannelState {
 							doneSnapshot = doneSnapshot && !(stillRecording)
 						}
 						if doneSnapshot {
-							self.firstMarkerReceived = false
-							self.finishedSnapshot = true
+							this_node.firstMarkerReceived = false
+							this_node.finishedSnapshot = true
 						}
 					} else {
 						fmt.Println("Trying to take a new snapshot while another already going on!")
 					}
-					self.canRecv.RUnlock()
-					self.canProceed.Unlock()
+					this_node.canRecv.RUnlock()
+					this_node.canProceed.Unlock()
 				} else {
-					self.canProceed.RLock()
-					self.canRecv.RLock()
-					fmt.Printf("%d Transfer %d", senderId, msg)
-					if self.shouldRecordChannelState[senderId] {
-						channelState[senderId] = append(channelState[senderId], msg)
+					this_node.canProceed.RLock()
+					this_node.canRecv.RLock()
+					fmt.Printf("%d Transfer %d", senderID, msg)
+					if this_node.shouldRecordChannelState[senderID] {
+						channelState[senderID] = append(channelState[senderID], msg)
 					}
-					self.updateBalance(msg)
-					self.canRecv.RUnlock()
-					self.canProceed.RUnlock()
+					this_node.updateBalance(msg)
+					this_node.canRecv.RUnlock()
+					this_node.canProceed.RUnlock()
 				}
 			}
 		}
 	}
 }
 
-func (self *Node) InitiateSnapshot() {
-	self.canProceed.Lock()
-	self.nodeState = self.balance
-	self.noMarkerReceived = false
+// InitiateSnapshot ...
+func (this_node *Node) InitiateSnapshot() {
+	this_node.canProceed.Lock()
+	this_node.nodeState = this_node.balance
+	this_node.noMarkerReceived = false
 
 	// Send marker message to all processes
-	for _, channel := range self.outChannels {
+	for _, channel := range this_node.outChannels {
 		channel <- -1
 	}
 
 	// Start recording incoming channel messages
-	for idx, _ := range self.shouldRecordChannelState {
-		self.shouldRecordChannelState[idx] = true
+	for idx := range this_node.shouldRecordChannelState {
+		this_node.shouldRecordChannelState[idx] = true
 	}
-	self.canProceed.Unlock()
+	this_node.canProceed.Unlock()
 }
 
+// PropagateSnapshot ...
 // Already locked at caller
-func (self *Node) PropagateSnapshot(senderId int) {
-	self.nodeState = self.balance
-	self.noMarkerReceived = false
+func (this_node *Node) PropagateSnapshot(senderID int) {
+	this_node.nodeState = this_node.balance
+	this_node.noMarkerReceived = false
 
 	// Send marker message to all processes
-	for _, channel := range self.outChannels {
+	for _, channel := range this_node.outChannels {
 		channel <- -1
 	}
 
 	// Start recording incoming channel messages
-	for idx, _ := range self.shouldRecordChannelState {
-		if idx != senderId {
-			self.shouldRecordChannelState[idx] = true
+	for idx := range this_node.shouldRecordChannelState {
+		if idx != senderID {
+			this_node.shouldRecordChannelState[idx] = true
 		}
-		self.channelState[senderId] = nil
+		this_node.channelState[senderID] = nil
 	}
 }
 
-func (self *Node) updateBalance(amount int) {
-	self.balance += amount
+func (this_node *Node) updateBalance(amount int) {
+	this_node.balance += amount
 }
 
-func (self *Node) RecvNonBlocking() {
-	for idx, _ := range self.inChannels {
+func (this_node *Node) recvNonBlocking() {
+	for idx := range this_node.inChannels {
 		select {
-		case msg := <- self.inChannels[idx]:
+		case msg := <-this_node.inChannels[idx]:
 			if msg == -1 {
-				self.canProceed.Lock()
-				self.canRecv.RLock()
+				this_node.canProceed.Lock()
+				this_node.canRecv.RLock()
 				// TODO - remove print below
 				fmt.Printf("%d SnapshotToken -1", idx)
-				if self.noMarkerReceived {
-					self.propagateSnapshot(idx)
-				} else if self.shouldRecordChannelState[idx] == true {
-					self.shouldRecordChannelState[idx] = false
+				if this_node.noMarkerReceived {
+					this_node.propagateSnapshot(idx)
+				} else if this_node.shouldRecordChannelState[idx] == true {
+					this_node.shouldRecordChannelState[idx] = false
 					doneSnapshot := true
-					for _, stillRecording := range self.shouldRecordChannelState {
+					for _, stillRecording := range this_node.shouldRecordChannelState {
 						doneSnapshot = doneSnapshot && !(stillRecording)
 					}
 					if doneSnapshot {
-						self.firstMarkerReceived = false
-						self.finishedSnapshot = true
+						this_node.firstMarkerReceived = false
+						this_node.finishedSnapshot = true
 					}
 				} else {
 					fmt.Println("Trying to take a new snapshot while another already going on!")
 				}
-				self.canRecv.RUnlock()
-				self.canProceed.Unlock()
+				this_node.canRecv.RUnlock()
+				this_node.canProceed.Unlock()
 			} else {
-				self.canProceed.RLock()
-				self.canRecv.RLock()
+				this_node.canProceed.RLock()
+				this_node.canRecv.RLock()
 				// TODO Remove print below
 				fmt.Printf("%d Transfer %d", idx, msg)
-				if self.shouldRecordChannelState[idx] {
+				if this_node.shouldRecordChannelState[idx] {
 					channelState[idx] = append(channelState[idx], msg)
 				}
-				self.updateBalance(msg)
-				self.canRecv.RUnlock()
-				self.canProceed.RUnlock()
+				this_node.updateBalance(msg)
+				this_node.canRecv.RUnlock()
+				this_node.canProceed.RUnlock()
 			}
 		default:
 		}
 	}
 }
 
-func (self *Node) GetState() {
-	state = NewState(self.nodeId, self.nodeState, self.channelState)
+// GetState ...
+func (this_node *Node) GetState() {
+	state = NewState(this_node.nodeID, this_node.nodeState, this_node.channelState)
 	return state
 }
