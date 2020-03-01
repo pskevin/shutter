@@ -67,47 +67,52 @@ TODO: Shift the command handlers into different files instead of collecting all 
 // 	fmt.Printf("\nAt function PrintSnapshot: %v", args)
 // }
 
-var (
-	MAX_NODES = 100000
+const MAX_NODES = 100000
 
+var (
 	// Arrays are go-routine safe
-	nodes            [MAX_NODES]Node
+	nodes            [MAX_NODES]*Node
 	initializedNodes []int
 	nodeStates       []State
 )
 
+// KillAll ...
 func KillAll() {
 	os.Exit(0)
 }
 
+// CreateNode ...
 // TODO iterate through nodes only when initialized
 func CreateNode(id int, balance int) {
-	new_node := New(id, balance)
+	newNode := New(id, balance)
 
-	for _, node_id := range initializedNodes {
-		n := nodes[node_id]
-		ch_in := make(chan int)
-		new_node.CreateIncoming(n.nodeId, ch_in)
-		n.CreateOutgoing(new_node.nodeId, ch_in)
+	for _, presentID := range initializedNodes {
+		n := nodes[presentID]
+		chIn := make(chan int)
+		newNode.CreateIncoming(n.nodeID, chIn)
+		n.CreateOutgoing(newNode.nodeID, chIn)
 
-		ch_out := make(chan int)
-		new_node.CreateOutgoing(n.nodeId, ch_out)
-		n.CreateIncoming(new_node.nodeId, ch_out)
+		chOut := make(chan int)
+		newNode.CreateOutgoing(n.nodeID, chOut)
+		n.CreateIncoming(newNode.nodeID, chOut)
 	}
 
-	nodes[new_node.nodeId] = new_node
-	initializedNodes = initializedNodes.append(id)
+	nodes[newNode.nodeID] = newNode
+	initializedNodes = append(initializedNodes, id)
 }
 
-func Send(sId int, rId int, amount int) {
-	sender := nodes[sId]
-	sender.SendMessage(rId, amount)
+// Send ...
+func Send(sID int, rID int, amount int) {
+	sender := nodes[sID]
+	sender.SendMessage(rID, amount)
 }
 
+// Receive ...
 func Receive(id ...int) {
-	rId := id[0]
-	receiver := nodes[rId]
-	receiver.RecvMessage(id[1:])
+	rID := id[0]
+	receiver := nodes[rID]
+	recvParams := id[1:]
+	receiver.RecvMessage(recvParams)
 }
 
 func ReceiveAll() {
@@ -117,8 +122,8 @@ func ReceiveAll() {
 }
 
 // This command will be received from Observer, not Master
-func BeginSnapshot(nodeId int) {
-	node := nodes[nodeId]
+func BeginSnapshot(nodeID int) {
+	node := nodes[nodeID]
 	node.InitiateSnapshot()
 }
 
