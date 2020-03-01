@@ -7,25 +7,25 @@ import (
 )
 
 type Node struct {
-	nodeId: int
-	balance: int
-	inChannels: map[int](chan int)
-	outChannels: map[int](chan int)
+	nodeId int
+	balance int
+	inChannels map[int](chan int)
+	outChannels map[int](chan int)
 
-	canProceed: sync.RWMutex
-	canRecv: sync.RWMutex
+	canProceed sync.RWMutex
+	canRecv sync.RWMutex
 
-	noMarkerReceived: bool
-	finishedSnapshot: bool
-	nodeState: int
-	channelState: map[int]([]int)
-	shouldRecordChannelState: map[int](bool)
+	noMarkerReceived bool
+	finishedSnapshot bool
+	nodeState int
+	channelState map[int]([]int)
+	shouldRecordChannelState map[int](bool)
 }
 
 type State struct {
-	nodeId: int
-	nodeState: int
-	channelState: map[int]([] int)
+	nodeId int
+	nodeState int
+	channelState map[int]([] int)
 }
 
 func New(nodeId int, balance int) {

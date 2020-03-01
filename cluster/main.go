@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"time"
 )
 
 func main() {
@@ -73,9 +71,10 @@ var (
 	MAX_NODES = 100000
 
 	// Arrays are go-routine safe
-	nodes [MAX_NODES]Node
+	nodes            [MAX_NODES]Node
+	initializedNodes []int
+	nodeStates       []State
 )
-
 
 func KillAll() {
 	os.Exit(0)
@@ -85,7 +84,8 @@ func KillAll() {
 func CreateNode(id int, balance int) {
 	new_node := New(id, balance)
 
-	for _, n := range nodes {
+	for _, node_id := range initializedNodes {
+		n := nodes[node_id]
 		ch_in := make(chan int)
 		new_node.CreateIncoming(n.nodeId, ch_in)
 		n.CreateOutgoing(new_node.nodeId, ch_in)
@@ -95,7 +95,8 @@ func CreateNode(id int, balance int) {
 		n.CreateIncoming(new_node.nodeId, ch_out)
 	}
 
-	nodes[new_node.nodeId] =  new_node
+	nodes[new_node.nodeId] = new_node
+	initializedNodes = initializedNodes.append(id)
 }
 
 func Send(sId int, rId int, amount int) {
@@ -115,22 +116,24 @@ func ReceiveAll() {
 	}
 }
 
-// This command will be received from Observer, not Master 
+// This command will be received from Observer, not Master
 func BeginSnapshot(nodeId int) {
 	node := nodes[nodeId]
 	node.InitiateSnapshot()
 }
 
 // This function will send response to Observer, not Master
-//TODO finish concurrent creations of states
 func CollectState() {
-	states := [MAX_NODES]State
+	var states [MAX_NODES]State
 	for _, node := range nodes {
-		go node.GetState()
+		// TODO make this run concurrently
+		nodeState := node.GetState()
+		nodeStates = append(nodeStates, nodeState)
 	}
 }
 
 // Will be done in observer
 // TODO
 func PrintSnapshot() {
+
 }
