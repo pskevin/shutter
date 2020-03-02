@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"sort"
 	"strconv"
+	"sync"
 )
 
 func main() {
@@ -89,11 +92,11 @@ func CreateNode(args ...interface{}) {
 
 	for _, presentID := range initializedNodes {
 		n := nodes[presentID]
-		chIn := make(chan int)
+		chIn := make(chan int, MAX_NODES)
 		newNode.CreateIncoming(n.nodeID, chIn)
 		n.CreateOutgoing(newNode.nodeID, chIn)
 
-		chOut := make(chan int)
+		chOut := make(chan int, MAX_NODES)
 		newNode.CreateOutgoing(n.nodeID, chOut)
 		n.CreateIncoming(newNode.nodeID, chOut)
 	}
@@ -122,10 +125,15 @@ func Receive(args ...interface{}) {
 
 }
 
+// TODO: Once system is built, convert it to goroutine call
 func ReceiveAll(args ...interface{}) {
-	for _, node := range nodes {
-		go node.RecvNonBlocking()
+	var wg sync.WaitGroup
+	for _, nodeID := range initializedNodes {
+		node := nodes[nodeID]
+		wg.Add(1)
+		node.RecvNonBlocking(&wg)
 	}
+	wg.Wait()
 }
 
 // This command will be received from Observer, not Master
@@ -137,8 +145,8 @@ func BeginSnapshot(args ...interface{}) {
 
 // This function will send response to Observer, not Master
 func CollectState(args ...interface{}) {
-	// var states [MAX_NODES]State
-	for _, node := range nodes {
+	for _, nodeID := range initializedNodes {
+		node := nodes[nodeID]
 		// TODO make this run concurrently
 		nodeState := node.GetState()
 		nodeStates = append(nodeStates, nodeState)
@@ -149,7 +157,42 @@ func CollectState(args ...interface{}) {
 // TODO
 func PrintSnapshot(args ...interface{}) {
 
+	sort.Slice(nodeStates, func(i, j int) bool {
+		return nodeStates[i].nodeID < nodeStates[j].nodeID
+	})
+
+	fmt.Println("---Node states")
+	for _, state := range nodeStates {
+		fmt.Printf("node %d = %d\n", state.nodeID, state.nodeState)
+	}
+
+	fmt.Println("---Channel states")
+	for _, state := range nodeStates {
+		for senderIdx, cStateArray := range state.channelState {
+			channelAmount := 0
+			for _, val := range cStateArray {
+				channelAmount += val
+			}
+			fmt.Printf("channel (%d -> %d) = %d\n", senderIdx, state.nodeID, channelAmount)
+		}
+	}
 }
+
+// func main() {
+// 	CreateNode(1, 1000)
+// 	CreateNode(2, 500)
+// 	Send(1, 2, 300)
+// 	Send(2, 1, 100)
+// 	Send(1, 2, 400)
+// 	Receive(2, 1)
+// 	BeginSnapshot(1)
+// 	Receive(2)
+// 	Receive(2)
+// 	ReceiveAll()
+// 	CollectState()
+// 	PrintSnapshot()
+// 	Send(1, 2, 5000)
+// }
 
 func toInt(arg interface{}) int {
 	s, ok := arg.(string)
