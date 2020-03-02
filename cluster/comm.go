@@ -50,7 +50,6 @@ func createNodeRoute(w http.ResponseWriter, r *http.Request) {
 	route := "CreateNode"
 
 	query := r.URL.Query()
-	fmt.Println(query)
 	nodeID, initAmount := query.Get("nodeID"), query.Get("initAmount")
 
 	handleRoute(route, nodeID, initAmount)
@@ -116,9 +115,9 @@ func handleRoute(route string, args ...interface{}) {
 
 	start := time.Now()
 	if routeHandlerMap[route].block == true {
-		routeHandlerMap[route].handler(args)
+		routeHandlerMap[route].handler(args...)
 	} else {
-		go routeHandlerMap[route].handler(args)
+		go routeHandlerMap[route].handler(args...)
 	}
 	fmt.Printf("\n%s took %v", route, time.Since(start))
 }

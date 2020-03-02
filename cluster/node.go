@@ -106,7 +106,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 			if msg == -1 {
 				this_node.canProceed.Lock()
 				this_node.canRecv.RLock()
-				fmt.Printf("%d SnapshotToken -1\n", senderID)
+				fmt.Printf("%d SnapshotToken -1", senderID)
 				if this_node.noMarkerReceived {
 					this_node.PropagateSnapshot(senderID)
 				} else if this_node.shouldRecordChannelState[senderID] == true {
@@ -127,7 +127,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 			} else {
 				this_node.canProceed.RLock()
 				this_node.canRecv.RLock()
-				fmt.Printf("%d Transfer %d\n", senderID, msg)
+				fmt.Printf("\n%d Transfer %d", senderID, msg)
 				if this_node.shouldRecordChannelState[senderID] {
 					this_node.channelState[senderID] = append(this_node.channelState[senderID], msg)
 				}
@@ -144,7 +144,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				if msg == -1 {
 					this_node.canProceed.Lock()
 					this_node.canRecv.RLock()
-					fmt.Printf("%d SnapshotToken -1\n", idx)
+					fmt.Printf("\n%d SnapshotToken -1", idx)
 					if this_node.noMarkerReceived {
 						this_node.PropagateSnapshot(idx)
 					} else if this_node.shouldRecordChannelState[idx] == true {
@@ -165,7 +165,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				} else {
 					this_node.canProceed.RLock()
 					this_node.canRecv.RLock()
-					fmt.Printf("%d Transfer %d\n", idx, msg)
+					fmt.Printf("\n%d Transfer %d", idx, msg)
 					if this_node.shouldRecordChannelState[idx] {
 						this_node.channelState[idx] = append(this_node.channelState[idx], msg)
 					}
@@ -191,7 +191,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				if msg == -1 {
 					this_node.canProceed.Lock()
 					this_node.canRecv.RLock()
-					fmt.Printf("%d SnapshotToken -1\n", senderID)
+					fmt.Printf("\n%d SnapshotToken -1", senderID)
 					if this_node.noMarkerReceived {
 						this_node.PropagateSnapshot(senderID)
 					} else if this_node.shouldRecordChannelState[senderID] == true {
@@ -212,7 +212,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				} else {
 					this_node.canProceed.RLock()
 					this_node.canRecv.RLock()
-					fmt.Printf("%d Transfer %d\n", senderID, msg)
+					fmt.Printf("\n%d Transfer %d", senderID, msg)
 					if this_node.shouldRecordChannelState[senderID] {
 						this_node.channelState[senderID] = append(this_node.channelState[senderID], msg)
 					}
@@ -228,7 +228,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 // InitiateSnapshot ...
 func (this_node *Node) InitiateSnapshot() {
 	this_node.canProceed.Lock()
-	fmt.Printf("Started by Node %d\n", this_node.nodeID)
+	fmt.Printf("\nStarted by Node %d", this_node.nodeID)
 	this_node.nodeState = this_node.balance
 	this_node.noMarkerReceived = false
 
