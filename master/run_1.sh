@@ -10,3 +10,5 @@ go run main.go Receive 2
 go run main.go ReceiveAll
 go run main.go CollectState
 go run main.go PrintSnapshot
+go run main.go Send 1 2 5000
+go run main.go KillAll

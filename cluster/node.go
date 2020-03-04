@@ -74,7 +74,7 @@ func (this_node *Node) SendMessage(recvID int, amount int) {
 	this_node.canProceed.RLock()
 	this_node.canRecv.Lock()
 	if amount > this_node.balance {
-		fmt.Println("ERR_SEND")
+		fmt.Printf("\nERR_SEND\n")
 	} else {
 		this_node.outChannels[recvID] <- amount
 		this_node.balance -= amount
@@ -127,7 +127,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 			} else {
 				this_node.canProceed.RLock()
 				this_node.canRecv.RLock()
-				fmt.Printf("\n%d Transfer %d", senderID, msg)
+				fmt.Printf("\n\t~\t%d Transfer %d", senderID, msg)
 				if this_node.shouldRecordChannelState[senderID] {
 					this_node.channelState[senderID] = append(this_node.channelState[senderID], msg)
 				}
@@ -165,7 +165,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				} else {
 					this_node.canProceed.RLock()
 					this_node.canRecv.RLock()
-					fmt.Printf("\n%d Transfer %d", idx, msg)
+					fmt.Printf("\n\t=\t%d Transfer %d", idx, msg)
 					if this_node.shouldRecordChannelState[idx] {
 						this_node.channelState[idx] = append(this_node.channelState[idx], msg)
 					}
@@ -212,7 +212,7 @@ func (this_node *Node) RecvMessage(sender ...int) {
 				} else {
 					this_node.canProceed.RLock()
 					this_node.canRecv.RLock()
-					fmt.Printf("\n%d Transfer %d", senderID, msg)
+					fmt.Printf("\n\t+\t%d Transfer %d", senderID, msg)
 					if this_node.shouldRecordChannelState[senderID] {
 						this_node.channelState[senderID] = append(this_node.channelState[senderID], msg)
 					}
