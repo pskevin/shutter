@@ -8,7 +8,17 @@ import (
 	"sync"
 )
 
+var (
+	observerBegin   chan int
+	observerCollect chan int
+	observerPrint   chan int
+)
+
 func main() {
+	observerBegin = make(chan int)
+	observerCollect = make(chan int)
+	observerPrint = make(chan int)
+	go runObserver()
 
 	// Master-Cluster Communications Initialization
 	routeHandlerMap := RouteHandlerMap{
@@ -29,47 +39,6 @@ func main() {
 TODO: Shift the command handlers into different files instead of collecting all of them in one file
 
 */
-
-// // KillAll executes 'KillAll' command on the cluster
-// func KillAll(args ...interface{}) {
-// 	fmt.Printf("\nAt function KillAll: %v", args)
-// }
-
-// // CreateNode executes 'CreateNode' command on the cluster
-// func CreateNode(args ...interface{}) {
-// 	time.Sleep(time.Millisecond)
-// 	fmt.Printf("\nAt function CreateNode: %v", args)
-// }
-
-// // Send executes 'Send' command on the cluster
-// func Send(args ...interface{}) {
-// 	fmt.Printf("\nAt function Send: %v", args)
-// }
-
-// // Receive executes 'Receive' command on the cluster
-// func Receive(args ...interface{}) {
-// 	fmt.Printf("\nAt function Receive: %v", args)
-// }
-
-// // ReceiveAll executes 'ReceiveAll' command on the cluster
-// func ReceiveAll(args ...interface{}) {
-// 	fmt.Printf("\nAt function ReceiveAll: %v", args)
-// }
-
-// // BeginSnapshot executes 'BeginSnapshot' command on the cluster
-// func BeginSnapshot(args ...interface{}) {
-// 	fmt.Printf("\nAt function BeginSnapshot: %v", args)
-// }
-
-// // CollectState executes 'CollectState' command on the cluster
-// func CollectState(args ...interface{}) {
-// 	fmt.Printf("\nAt function CollectState: %v", args)
-// }
-
-// // PrintSnapshot blah
-// func PrintSnapshot(args ...interface{}) {
-// 	fmt.Printf("\nAt function PrintSnapshot: %v", args)
-// }
 
 const MAX_NODES = 100000
 
@@ -137,14 +106,13 @@ func ReceiveAll(args ...interface{}) {
 }
 
 // This command will be received from Observer, not Master
-func BeginSnapshot(args ...interface{}) {
-	nodeId := toInt(args[0])
-	node := nodes[nodeId]
+func ObserverBeginSnapshot(nodeID int) {
+	node := nodes[nodeID]
 	node.InitiateSnapshot()
 }
 
 // This function will send response to Observer, not Master
-func CollectState(args ...interface{}) {
+func ObserverCollectState() {
 	for _, nodeID := range initializedNodes {
 		node := nodes[nodeID]
 		// TODO make this run concurrently
@@ -155,7 +123,7 @@ func CollectState(args ...interface{}) {
 
 // Will be done in observer
 // TODO
-func PrintSnapshot(args ...interface{}) {
+func ObserverPrintSnapshot() {
 
 	sort.Slice(nodeStates, func(i, j int) bool {
 		return nodeStates[i].nodeID < nodeStates[j].nodeID
@@ -178,21 +146,32 @@ func PrintSnapshot(args ...interface{}) {
 	}
 }
 
-// func main() {
-// 	CreateNode(1, 1000)
-// 	CreateNode(2, 500)
-// 	Send(1, 2, 300)
-// 	Send(2, 1, 100)
-// 	Send(1, 2, 400)
-// 	Receive(2, 1)
-// 	BeginSnapshot(1)
-// 	Receive(2)
-// 	Receive(2)
-// 	ReceiveAll()
-// 	CollectState()
-// 	PrintSnapshot()
-// 	Send(1, 2, 5000)
-// }
+func BeginSnapshot(args ...interface{}) {
+	nodeId := toInt(args[0])
+	observerBegin <- nodeId
+}
+
+func CollectState(args ...interface{}) {
+	observerCollect <- 1
+}
+
+func PrintSnapshot(args ...interface{}) {
+	observerPrint <- 1
+}
+
+func runObserver() {
+	for {
+		select {
+		case nodeID := <-observerBegin:
+			ObserverBeginSnapshot(nodeID)
+		case <-observerCollect:
+			ObserverCollectState()
+		case <-observerPrint:
+			ObserverPrintSnapshot()
+		default:
+		}
+	}
+}
 
 func toInt(arg interface{}) int {
 	s, ok := arg.(string)
