@@ -75,7 +75,7 @@ func receiveRoute(w http.ResponseWriter, r *http.Request) {
 	if senderID != "" {
 		handleRoute(route, receiverID, senderID)
 	} else {
-		handleRoute(route, receiverID, senderID)
+		handleRoute(route, receiverID)
 	}
 }
 
@@ -112,6 +112,7 @@ func printSnapshotRoute(w http.ResponseWriter, r *http.Request) {
 
 func handleRoute(route string, args ...interface{}) {
 	fmt.Printf("\nAt /%s endpoint.", route)
+	// fmt.Printf("\n%v\n", routeHandlerMap[route])
 
 	start := time.Now()
 	if routeHandlerMap[route].block == true {
