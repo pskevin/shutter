@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -111,14 +110,14 @@ func printSnapshotRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRoute(route string, args ...interface{}) {
-	fmt.Printf("\nAt /%s endpoint.", route)
+	// fmt.Printf("\nAt /%s endpoint.", route)
 	// fmt.Printf("\n%v\n", routeHandlerMap[route])
 
-	start := time.Now()
+	// start := time.Now()
 	if routeHandlerMap[route].block == true {
 		routeHandlerMap[route].handler(args...)
 	} else {
 		go routeHandlerMap[route].handler(args...)
 	}
-	fmt.Printf("\n%s took %v", route, time.Since(start))
+	// fmt.Printf("\n%s took %v", route, time.Since(start))
 }

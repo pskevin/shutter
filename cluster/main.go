@@ -77,7 +77,7 @@ func CreateNode(args ...interface{}) {
 func Send(args ...interface{}) {
 	sId, rId, amount := toInt(args[0]), toInt(args[1]), toInt(args[2])
 	sender := nodes[sId]
-	sender.SendMessage(rId, amount)
+	go sender.SendMessage(rId, amount)
 }
 
 func Receive(args ...interface{}) {
@@ -86,10 +86,10 @@ func Receive(args ...interface{}) {
 
 	switch len(args) {
 	case 1:
-		receiver.RecvMessage()
+		go receiver.RecvMessage()
 	case 2:
 		sId := toInt(args[1])
-		receiver.RecvMessage(sId)
+		go receiver.RecvMessage(sId)
 	}
 
 }
@@ -100,7 +100,7 @@ func ReceiveAll(args ...interface{}) {
 	for _, nodeID := range initializedNodes {
 		node := nodes[nodeID]
 		wg.Add(1)
-		node.RecvNonBlocking(&wg)
+		go node.RecvNonBlocking(&wg)
 	}
 	wg.Wait()
 }
@@ -115,14 +115,12 @@ func ObserverBeginSnapshot(nodeID int) {
 func ObserverCollectState() {
 	for _, nodeID := range initializedNodes {
 		node := nodes[nodeID]
-		// TODO make this run concurrently
 		nodeState := node.GetState()
 		nodeStates = append(nodeStates, nodeState)
 	}
 }
 
 // Will be done in observer
-// TODO
 func ObserverPrintSnapshot() {
 
 	sort.Slice(nodeStates, func(i, j int) bool {
