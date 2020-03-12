@@ -33,7 +33,7 @@ In case you are unable to build the binary, use the pre-built binary provided in
 
 For example, if we ran on MacOS,
 In one terminal, start the cluster:  `./cluster@darwin-amd64`
-In another terminal, invoke the master to run parse test file: `./master@darwin-amd64 ParseFile master/examples/run_1.txt`
+In another terminal, invoke the master to run test file: `./master@darwin-amd64 ParseFile master/examples/run_1.txt`
 
 ## Example Test Cases
 We tried the provided test cases, and also tried creating more nodes after some amount of Sends and Receives have happened. Moreover, we have attached a video showing how our Final E2E run works for reference.
