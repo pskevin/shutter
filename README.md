@@ -3,7 +3,7 @@
 ## Protocol Description
 The node chosen to initiate the Snapshot records its node state and sends snapshot token (-1 in our implementation) to all of its outgoing channels. The node starts recording messages from all incoming channels.
 
-Nodes which receive a snapshot token for the first time, record their node state, set the channel state for their incoming channel from the sender as empty, send a snapshot token to all of their outgoing channels and start recording the channel states for all their incoming channels except for the one coming from the sender of their first snapshot token. This all happens atomically, so that no other application-based state chnage can happen in middle.
+Nodes which receive a snapshot token for the first time, record their node state, set the channel state for their incoming channel from the sender as empty, send a snapshot token to all of their outgoing channels and start recording the channel states for all their incoming channels except for the one coming from the sender of their first snapshot token. This all happens atomically, so that no other application-based state change can happen in middle.
 
 Nodes which receive a snapshot token after their first time stop recording the channel state at the incoming channel of the token. Once all channels are stopped from recording, the node is ready to send its partial snapshot results to the observer.
 
@@ -14,11 +14,13 @@ We implement the cluster in Golang. We consider the master to be split into two 
 
 Communication:
 
-1. The cluster-master and observer communicate using Golang's message passing primitive between go-routines, called channels. The channel is FIFO ordered by design.
+1. The request-master and cluster-master communicate via http requests for the sake of simplicity. The request-master itself is modelled as a cli.
 
-2. Communication between the cluster-master and nodes (Send, Receive, ReceiveAll triggers) and between observer and nodes (CollectSnapshot, PrintSnapshot) happens directly by calling a method of the specified node.
+2. The cluster-master and observer communicate using Golang's message passing primitive between go-routines, called channels. The channel is FIFO ordered by design.
 
-3. Communication between nodes (Sending amounts, tokens) happens via go channels. Each node has an incoming and outgoing channel associated with every other node. Only when receive is called, a message is taken out from the head of the channel
+3. Communication between the cluster-master and nodes (Send, Receive, ReceiveAll triggers) and between observer and nodes (CollectSnapshot, PrintSnapshot) happens directly by calling a method of the specified node.
+
+4. Communication between nodes (Sending amounts, tokens) happens via go channels. Each node has an incoming and outgoing channel associated with every other node. Only when receive is called, a message is taken out from the head of the channel
 
 Our node abstraction keeps track of its state using state variables like shouldRecordChannelState, noMarkerReceived, and finishedSnapshot.
 
@@ -26,12 +28,11 @@ Go channels provide the abstraction of FIFO channels used in Chandy-Lamport algo
 
 ## Instructions
 The code requires setup of Golang.
-Once Golang is installed, run the Makefile to build Go binary.
-We have also provided the binaries, in case of difficulty in setting up the Go environment.
+Once Golang is installed, run the ./build.sh to build Go binary. This builds binaries specific to multiple platforms (MacOS, Linux and Windows). Depending on the platform you are working on, run binary with it's spec.
 
-Start the cluster:  `cd cluster; ./cluster`
-
-Run tests: `cd master; ./master ParseFile "path_to_test.txt"`
+For example, if we ran on MacOS,
+In one terminal, start the cluster:  `./cluster@darwin-amd64`
+In another terminal, invoke the master to run parse file: `./master@darwin-amd64 ParseFile master/examples/run_1.txt`
 
 ## Example Test Case
 We tried the provided test cases, and also tried creating more nodes after some amount of Sends and Receives have happened.
