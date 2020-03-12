@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -31,9 +30,9 @@ func InitMasterClusterComm(_routeHandlerMap RouteHandlerMap) {
 	router.HandleFunc("/PrintSnapshot", printSnapshotRoute).Methods("GET")
 
 	// Starting Cluster Server
-	fmt.Println("\nStarting Cluster Server @ http://localhost:8118")
+	// fmt.Println("\nStarting Cluster Server @ http://localhost:8118")
 	if err := http.ListenAndServe(":8118", router); err != nil {
-		fmt.Printf("\nmux server: %v\n", err)
+		// fmt.Printf("\nmux server: %v\n", err)
 	}
 }
 

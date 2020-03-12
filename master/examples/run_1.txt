@@ -1,14 +1,16 @@
 CreateNode 1 1000
 CreateNode 2 500
+CreateNode 3 300
+CreateNode 4 600
 Send 1 2 300
 Send 2 1 100
+Send 1 3 100
 Send 1 2 400
 Receive 2 1
+Receive 3
+Send 2 4 50
 BeginSnapshot 1
-Receive 2
-Receive 2
 ReceiveAll
 CollectState
 PrintSnapshot
-Send 1 2 5000
 KillAll

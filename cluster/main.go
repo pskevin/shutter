@@ -133,13 +133,19 @@ func ObserverPrintSnapshot() {
 	}
 
 	fmt.Println("---Channel states")
-	for _, state := range nodeStates {
-		for senderIdx, cStateArray := range state.channelState {
-			channelAmount := 0
-			for _, val := range cStateArray {
-				channelAmount += val
+	for _, sxState := range nodeStates {
+		for _, rxState := range nodeStates {
+			if rxState.nodeID == sxState.nodeID {
+				continue
 			}
-			fmt.Printf("channel (%d -> %d) = %d\n", senderIdx, state.nodeID, channelAmount)
+
+			channelAmount := 0
+			if channelState, ok := rxState.channelState[sxState.nodeID]; ok {
+				for _, amount := range channelState {
+					channelAmount += amount
+				}
+			}
+			fmt.Printf("channel (%d -> %d) = %d\n", sxState.nodeID, rxState.nodeID, channelAmount)
 		}
 	}
 }
