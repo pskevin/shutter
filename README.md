@@ -29,6 +29,7 @@ Go channels provide the abstraction of FIFO channels used in Chandy-Lamport algo
 ## Instructions
 The code requires setup of Golang.
 Once Golang is installed, run the ./build.sh to build Go binary. This builds binaries specific to multiple platforms (MacOS, Linux and Windows). Depending on the platform you are working on, run binary with it's spec.
+In case you are unable to build the binary, use the pre-built binary provided in the project and it should work just fine.
 
 For example, if we ran on MacOS,
 In one terminal, start the cluster:  `./cluster@darwin-amd64`
